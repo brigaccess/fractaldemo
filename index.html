@@ -325,12 +325,18 @@ customRule =
         }
 
         function updateMethodInfo() {
-            document.getElementById('iteration').innerText = window.builder.iteration;
-            var postfix = document.getElementById('iteration-postfix');
-            if (window.method.step) {
-                postfix.innerText = 'x' + window.builder.step;
+            
+            // I'm just a fast hack for demo, nevermind me
+            if (window.builder.rules) {
+                document.getElementById('iteration').innerText = window.builder.states[window.builder.iteration];
             } else {
-            	postfix.innerText = '';
+                document.getElementById('iteration').innerText = window.builder.iteration;
+                var postfix = document.getElementById('iteration-postfix');
+                if (window.method.step) {
+                    postfix.innerText = 'x' + window.builder.step;
+                } else {
+                	postfix.innerText = '';
+                }
             }
             document.getElementById('iteration-time').innerText = window.builder.iterationTime || 0;
             document.getElementById('draw-time').innerText = window.builder.drawTime || 0;

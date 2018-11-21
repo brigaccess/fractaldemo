@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Демонстрация работы алгоритмов построения фракталов</title>
+    <meta name="viewport" content="width=500, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+</head>
+<body>
+    <div class="vertical-container">
+        <div class="method-container">
+            Способ: 
+            <select id="method-chooser">
+                <option></option>
+            </select>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="grid-canvas" width="500" height="500"></canvas>
+            <canvas id="main-canvas" width="500" height="500"></canvas>
+        </div>
+
+        <div class="tablechooser-container">
+            <select id="table-chooser" hidden="1">
+            </select>
+
+            <div class="options-container" id="options-root">
+
+            </div>
+        </div>
+
+        <div id="controls-container" class="controls-container" style="visibility: hidden;">
+            <button id="prev-iteration" type="button">&lt;</button>
+            <span>
+            	<span id="iteration"></span><span id="iteration-postfix"></span>
+            </span>
+            <button id="next-iteration" type="button">&gt;</button>
+        </div>
+        <div class="stats-container">
+            Время итерации: <span id="iteration-time"></span>ms, Время отрисовки: <span id="draw-time"></span>ms
+        </div>
+    </div>
+
+    <script src="builders/determenistic-ifs.js"></script>
+    <script src="builders/determenistic-ifs-pixels.js"></script>
+    <script src="builders/randomized-ifs.js"></script>
+    <script src="builders/chaosgame.js"></script>
+    <script src="builders/lsystems.js"></script>
+    <script src="builders/fractalflame.js"></script>
+    <script src="grid.js"></script>
+    <script>
+        // Antialiasing fix
+        document.getElementById("main-canvas").getContext('2d').translate(0.5, 0.5);
+        document.getElementById("grid-canvas").getContext('2d').translate(0.5, 0.5);
+
+        makeGrid(document.getElementById("grid-canvas"));
+        
+        var canvas = document.getElementById("main-canvas");
+
+        var detifsTables = [
+            {
+                name: 'Треугольник Серпинского',
+                table: [
+                    [0.5, 0, 0, 0.5, 0, 0],
+                    [0.5, 0, 0, 0.5, 1/2, 0],
+                    [0.5, 0, 0, 0.5, 1/4, 1/2]
+                ]
+            }, {
+            	name: 'Дерево',
+            	table: [
+            		[0.195, -0.48, 0.344, 0.443, 0.443, 0.2452],
+					[0.462 , 0.414 , -0.252, 0.361 , 0.2511, 0.5692],
+					[-0.058, -0.07 , 0.453 , -0.111, 0.5976, 0.0969],
+					[-0.035, 0.07 , -0.469, -0.022, 0.4884, 0.5069],
+					[-0.637, 0, 0, 0.501, 0.8662, 0.2513]
+				]
+            }, {
+            	name: 'Пятиугольник',
+            	table: [
+            		[0.382, 0, 0, 0.382, 0.3072, 0.619],
+					[0.382, 0, 0, 0.382, 0.6033, 0.4044],
+					[0.382, 0, 0, 0.382, 0.0139, 0.4044],
+					[0.382, 0, 0, 0.382, 0.1253, 0.0595],
+					[0.382, 0, 0, 0.382, 0.492, 0.0595]
+            	]
+            }, {
+            	name: 'Кривая дракона',
+            	table: [
+            		[0, 0.577, -0.577, 0, 0.0951, 0.5893],
+					[0, 0.577, -0.577, 0, 0.4413, 0.7893],
+					[0, 0.577, -0.577, 0, 0.0952, 0.9893]
+            	]
+            }
+        ]
+
+        var randIfsTables = [
+            {
+                name: 'Треугольник Серпинского',
+                table: {
+                    offset: [0, 0],
+                    table: [
+                        [0.5, 0, 0, 0.5, 0, 0, 1/3],
+                        [0.5, 0, 0, 0.5, 250, 0, 1/3],
+                        [0.5, 0, 0, 0.5, 125, 250, 1/3]
+                    ]
+                }
+            }, {
+                name: 'Папоротник',
+                table: {
+                    offset: [100, 50],
+                    table: [
+                        [    0,         0,       0,   0.16,       0,         0,    0.05],
+                        [ 0.85,      0.04,   -0.04,   0.85,       0,        50,    0.85],
+                        [  0.2,     -0.26,    0.23,   0.22,       0,        50,    0.07],
+                        [-0.15,      0.28,    0.26,   0.24,       0,      0.44,    0.07]
+                    ]
+                }
+            }, {
+                name: 'Дерево',
+                table: {
+                    offset: [250, 50],
+                    table: [
+                    [0, 0, 0, 0.5, 0, 0, 0.5],
+                    [0.42, -0.42, 0.42, 0.42, 0, 100, 0.4],
+                    [0.42, 0.42, -0.42, 0.42, 0, 100, 0.4],
+                    [0.1, 0, 0, 0.1, 0, 2, 0.15]
+                ]}
+            }, {
+                name: 'Пятиугольник',
+                table: {
+                    offset: [50, 50],
+                    table: [
+                    [1/3, 0, 0, 1/3, 125, 0, 1/5],
+                    [1/3, 0, 0, 1/3, 250, 100, 1/5],
+                    [1/3, 0, 0, 1/3, 0, 100, 1/5],
+                    [1/3, 0, 0, 1/3, 50, 250, 1/5],
+                    [1/3, 0, 0, 1/3, 200, 250, 1/5]
+                ]}
+            }
+        ]
+
+        var chaosTables = [
+            {
+                name: 'Треугольник Серпинского (1/2)',
+                table: [3, 1/2]
+            },
+            {
+                name: 'Пятиугольник, 6/8',
+                table: [5, 6/8]
+            },
+            {
+                name: 'Пятиугольник, 1/2, разные вершины',
+                table: [5, 1/2, function() {let c = this.prevChoice;while (c == this.prevChoice) {c=this.defaultRule();}this.prevChoice = c;return c;}]
+            }
+        ]
+
+        var lsystems = [
+            {
+                name: 'Треугольник Серпинского',
+                table: [
+                    [50, 50], 'F-G-G', {'F': 'F-G+F+G-F', 'G': 'GG'}, {'G': 'F'}, 120, function() { return (this.canvas.width - 100) / Math.pow(2, this.iteration); }
+                ]
+            },
+            {
+            	name: 'Sierpinski Arrowhead Curve',
+            	table: [
+            		[50, 450], 'YF', {'X': 'YF+XF+Y', 'Y': 'XF-YF-X'}, {}, 60, function() { return (this.canvas.width - 100) / Math.pow(2, this.iteration);}
+            	]
+            },
+            {
+                name: 'Снежинка Коха',
+                table: [
+                    [50, 135], 'F--F--F', {'F': 'F+F--F+F'}, {}, 60, function() { return (this.canvas.width - 100) / Math.pow(3, this.iteration); }
+                ]
+            }, {
+            	name: 'Кривая Коха',
+            	table: [
+            		[50, 450], 'F', {'F': 'F+F-F-F+F'}, {}, 90, function() { return (this.canvas.width - 100) / Math.pow(3, this.iteration);}
+            	]
+            }, {
+            	name: 'Кривая Пеано-Госпера',
+            	table: [
+            		[250, 250], 'A', {'A': 'A-B--B+A++AA+B-', 'B': '+A-BB--B-A++A+B'}, {'A': 'F', 'B': 'F'}, 60, function() { return (this.canvas.width) / Math.pow(3, this.iteration)}
+            	]
+            }, {
+            	name: 'Растение',
+            	table: [
+            		[250, 500, Math.PI], 'X', {'X': 'F+[[X]-X]-F[-FX]+X', 'F': 'FF'}, {}, 20, function() { return 3 }
+            	]
+            }
+            
+        ]
+
+        var flames = [
+			{
+                name: 'Flame linear',
+                table: {
+                    coeffs: [
+                        {
+                            c: [0.932896, 0.249969, -0.249969, 0.932896, 0, 0, 0.5, 0],
+                            vv: [1, 0, 0, 0]
+                        }, {
+                            c: [0, 1.250001, -0.250001, 1.0, 0, 1.0, 0.5, 1],
+                            vv: [1, 0, 0, 0]
+                        }, {
+                            c: [1.249193, -0.096396, 0.124883, 0.076558, 0.756553, 0.441964, 0.4, 0],
+                            vv: [1, 0, 0, 0]
+                        }
+                    ]
+                }
+            }
+        ]
+        
+        var methods = [
+        {
+            name: 'Визуализация множества Мандельброта',
+            builder: (table) => { document.location.href = "https://brigaccess.github.io/fractaldemo/mandelbrot.html"; return () => {}; },
+            tables: [{
+            	name: '',
+            	table: []
+            }]
+        },
+        {
+            name: 'Детерминированный IFS (объекты)',
+            builder: (table) => new DetermenisticIFS(canvas, table, Triangle),
+            tables: detifsTables
+        }, {
+            name: 'Детерминированный IFS (пиксели)',
+            builder: (table, options) => {
+                return new DetermenisticIFSPixel(canvas, table, options.color, 
+                                                 new Triangle(0, 0, canvas.width, canvas.height)
+                                                );
+            },
+            tables: detifsTables,
+            options: {
+                'color': 'Цвет'
+            }
+        }, {
+            name: 'Рандомизированный IFS',
+            builder: (table, options) => {
+                return new RandomizedIFS(canvas, table, options.heatmap, options.color)
+            },
+            tables: randIfsTables,
+            options: {
+                'color': 'Цвет',
+                'heatmap': 'Heatmap'
+            },
+            step: true
+        }, {
+            name: 'Chaos Game',
+            builder: (table, options) => {
+                if (table.length > 2) {
+                    return new ChaosGame(canvas, table[0], table[1], options.polygon, table[2]);
+                } else {
+                    return new ChaosGame(canvas, table[0], table[1], options.polygon);
+                }
+            },
+            tables: chaosTables,
+            options: {
+                'polygon': 'Показывать многоугольник'
+            },
+            step: true
+        }, {
+            name: 'L-системы',
+            builder: (table) => {
+                return new LSystem(canvas, table[0], table[1], table[2], table[3], (Math.PI / 180) * table[4], table[5]);
+            },
+            tables: lsystems
+        }, {
+            name: 'Fractal flame',
+            builder: (table) => {
+                console.log(table);
+                return new FractalFlame(canvas, table.coeffs, table.vv, table.pt, table.ft);
+            },
+            tables: flames,
+            step: true
+        }]
+
+        /*
+customRule = 
+}
+        */
+        function initializeMethod() {
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            updateTableChooser();
+            updateOptions();
+            buildMethod();
+            updateMethodInfo();
+            document.getElementById('controls-container').style = "";
+        }
+
+        function onChooseMethod(e) {
+            var chosen = e.target.value;
+            if (chosen) {
+                var method = methods[chosen];
+                window.method = method;
+                window.chosenTable = method.tables[0].table;
+                initializeMethod();
+            }
+        }
+
+        function onChooseTable(e) {
+            window.chosenTable = window.method.tables[e.target.value].table;
+            buildMethod();
+        }
+
+        function onUpdateOption(e) {
+            buildMethod();
+            updateMethodInfo();
+        }
+
+        function setWorking() {
+            document.getElementById('iteration').innerText = "Считается...";
+        }
+
+        function buildMethod() {
+            var options;
+            if (window.method.options) {
+                options = getOptions();
+            }
+            window.builder = window.method.builder(window.chosenTable, options);
+            window.builder.drawnCallback = methodDrawCallback;
+        }
+
+        function updateMethodInfo() {
+            document.getElementById('iteration').innerText = window.builder.iteration;
+            var postfix = document.getElementById('iteration-postfix');
+            if (window.method.step) {
+                postfix.innerText = 'x' + window.builder.step;
+            } else {
+            	postfix.innerText = '';
+            }
+            document.getElementById('iteration-time').innerText = window.builder.iterationTime || 0;
+            document.getElementById('draw-time').innerText = window.builder.drawTime || 0;
+        }
+
+        function methodDrawCallback() {
+            updateMethodInfo();
+        }
+
+        function getOptions() {
+            var result = {};
+            var options = document.getElementById("options-root").getElementsByTagName('input');
+            var option;
+            for (var i = 0; i < options.length; i++) {
+                option = options[i];
+                result[option.name] = option.checked;
+            }
+            return result;
+        }
+
+        function updateChooser() {
+            var chooser = document.getElementById("method-chooser");
+            var option;
+            for (var i = 0; i < methods.length; i++) {
+                option = document.createElement('option');
+                option.value = i;
+                option.innerText = methods[i].name;
+                chooser.appendChild(option);
+            }
+        }
+
+        function updateTableChooser() {
+            var chooser = document.getElementById("table-chooser");
+            while (chooser.children.length > 0) {
+                chooser.removeChild(chooser.childNodes[0]);
+            }
+            var option;
+            for (var i = 0; i < window.method.tables.length; i++) {
+                option = document.createElement('option');
+                option.value = i;
+                option.innerText = window.method.tables[i].name;
+                chooser.appendChild(option);
+            }
+            chooser.hidden=false;
+        }
+
+        function updateOptions() {
+            var optionsRoot = document.getElementById("options-root")
+            while (optionsRoot.children.length > 0) {
+                optionsRoot.removeChild(optionsRoot.childNodes[0]);
+            }
+            if (window.method.options) {
+                var key, inp, option;
+                var keys = Object.keys(window.method.options);
+                for (var i = 0; i < keys.length; i++) {
+                    option = window.method.options[keys[i]];
+
+                    inp = document.createElement('input');
+                    inp.type = 'checkbox';
+                    inp.name = keys[i];
+                    inp.addEventListener('change', onUpdateOption);
+                    optionsRoot.appendChild(inp);
+
+                    inp = document.createElement('label');
+                    inp.for = keys[i];
+                    inp.innerText = option;
+                    optionsRoot.appendChild(inp);
+                }
+            }
+        }
+
+        updateChooser();
+
+        document.getElementById("method-chooser").addEventListener('change', onChooseMethod);
+        document.getElementById("table-chooser").addEventListener('change', onChooseTable);
+
+        document.getElementById("next-iteration").onclick = function() {
+            setWorking();
+            window.builder.nextIteration();
+        }
+
+        document.getElementById("prev-iteration").onclick = function() {
+            setWorking();
+            window.builder.prevIteration();
+        }
+
+        /*document.getElementById("boomerang").onclick = function() {
+            boomerangRunning = !boomerangRunning;
+            if (boomerangRunning) {
+                boomerang();
+            }
+        }*/
+    </script>
+</body>
+</html>

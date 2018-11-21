@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Визуализация множества Мандельброта</title>
+    <meta name="viewport" content="width=500, initial-scale=0.5">
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+</head>
+<body>
+    <canvas id="main-canvas" width="500" height="500"></canvas><br>
+    Масштаб: <input type="text" id="zoom" value="1" oninput="updateZoom(this)"/>
+    <button id="koch-inc" type="button">-</button>
+    <button id="koch-dec" type="button">+</button><br>
+    <a href="https://brigaccess.github.io/fractaldemo/index.html">Демонстрация алгоритмов</a>
+
+    <script src="mandelbrot.js"></script>
+    <script>
+        // Antialiasing fix
+        document.getElementById("main-canvas").getContext('2d').translate(0.5, 0.5);
+
+        var canvas = document.getElementById("main-canvas");
+        var mand = new MandelbrotSet(canvas);
+        var zoomInp = document.getElementById("zoom");
+
+        window.updateZoom = function(inp) {
+            mand.updateZoom(parseFloat(inp.value));
+        }
+
+        document.getElementById("koch-dec").onclick = function() {
+            let val = parseFloat(zoomInp.value);
+            if (Number.isFinite(val)) {
+                zoomInp.value = val / 2;
+            }
+            updateZoom(zoomInp);
+        }
+
+        document.getElementById("koch-inc").onclick = function() {
+            let val = parseFloat(zoomInp.value);
+            if (Number.isFinite(val)) {
+                zoomInp.value = val * 2;
+            }
+            updateZoom(zoomInp);
+        }
+    </script>
+</body>
+</html>

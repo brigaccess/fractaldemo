@@ -1,0 +1,41 @@
+#grid-canvas {
+    position: absolute;
+}
+
+#prev-iteration, #next-iteration {
+    width: 50px;
+    height: 50px;
+}
+
+#main-canvas {
+    
+}
+
+.vertical-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.method-container {
+    display: flex;
+    justify-content: center;
+    margin: 10px;
+    margin-bottom: 20px;
+}
+
+.method-container > select {
+    margin-left: 5px;
+}
+
+.tablechooser-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.controls-container {
+    width: 500px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

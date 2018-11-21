@@ -222,6 +222,13 @@
             }]
         },
         {
+            name: 'L-системы',
+            builder: (table) => {
+                return new LSystem(canvas, table[0], table[1], table[2], table[3], (Math.PI / 180) * table[4], table[5]);
+            },
+            tables: lsystems
+        }, 
+        {
             name: 'Детерминированный IFS (объекты)',
             builder: (table) => new DetermenisticIFS(canvas, table, Triangle),
             tables: detifsTables
@@ -261,12 +268,6 @@
                 'polygon': 'Показывать многоугольник'
             },
             step: true
-        }, {
-            name: 'L-системы',
-            builder: (table) => {
-                return new LSystem(canvas, table[0], table[1], table[2], table[3], (Math.PI / 180) * table[4], table[5]);
-            },
-            tables: lsystems
         }, {
             name: 'Fractal flame',
             builder: (table) => {
